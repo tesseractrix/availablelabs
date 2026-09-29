@@ -49,37 +49,59 @@ body{
 
 .hero{
     text-align:center;
-    padding:90px 20px;
+    padding:120px 20px 90px;
     position:relative;
     overflow:hidden;
 }
 
-.hero-logo{
+.logo-container{
     position:absolute;
     top:50%;
     left:50%;
 
-    transform:translate(-50%,-45%);
+    transform:translate(-50%, -50%);
 
-    width:500px;
-    max-width:80vw;
-
-    opacity:.08;
-
-    filter:
-        brightness(2)
-        grayscale(100%)
-        contrast(1.1);
+    z-index:0;
 
     pointer-events:none;
-    user-select:none;
 
-    z-index:1;
+    width:100%;
+
+    display:flex;
+    justify-content:center;
 }
 
+.logo-img{
+    width:100%;
+    max-width:580px;
+    height:auto;
+
+    opacity:.22;
+
+    filter:
+        grayscale(100%)
+        brightness(1.4);
+
+    display:block;
+
+    -webkit-mask-image:
+        radial-gradient(
+            ellipse at center,
+            rgba(0,0,0,1) 35%,
+            rgba(0,0,0,0) 85%
+        );
+
+    mask-image:
+        radial-gradient(
+            ellipse at center,
+            rgba(0,0,0,1) 35%,
+            rgba(0,0,0,0) 85%
+        );
+}
+    
 .hero .container{
     position:relative;
-    z-index:2;
+    z-index:1;
 }
 
 .hero::after{
@@ -279,9 +301,12 @@ footer{
 
 <header class="hero">
 
-    <img
-        src="img/calculus_logo.png"
-        alt        <h1>Calculus</h1>
+    <div class="logo-container">
+
+        <img
+            class="logo-img"
+            src="img/calculus_logo.png"
+      ulus</h1>
 
         <p>
             Ferramenta gratuita para calcular porcentagens,
