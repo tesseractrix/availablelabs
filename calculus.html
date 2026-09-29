@@ -50,49 +50,53 @@ body{
 }
 
 .hero{
-    text-align:center;
-    padding:120px 20px 90px;
     position:relative;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    min-height:320px;
+
     overflow:hidden;
 }
 
 .logo-container{
-    position:absolute;
-
-    top:20px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    z-index:0;
-
-    pointer-events:none;
-
     display:flex;
     justify-content:center;
+    align-items:center;
 
     width:100%;
+    position:relative;
+    z-index:1;
 }
 
 .logo-img{
     width:100%;
-    max-width:230px;
+    max-width:380px;
     height:auto;
 
     opacity:.22;
+
+    display:block;
 
     filter:
         grayscale(100%)
         brightness(1.4);
 
-    display:block;
-
     -webkit-mask-image:
         radial-gradient(
             ellipse at center,
-            rgba(0,0,0,1) 35%,
-            rgba(0,0,0,0) 85%
+            rgba(0,0,0,1) 45%,
+            rgba(0,0,0,0) 90%
         );
+
+    mask-image:
+        radial-gradient(
+            ellipse at center,
+            rgba(0,0,0,1) 45%,
+            rgba(0,0,0,0) 90%
+        );
+}
 
     mask-image:
         radial-gradient(
@@ -148,19 +152,25 @@ body{
 
     position:absolute;
 
-    width:700px;
-    height:700px;
+    width:500px;
+    height:500px;
+
+    border-radius:50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(59,130,246,.18),
+            transparent 70%
+        );
 
     left:50%;
-    top:-300px;
+    top:50%;
 
-    transform:translateX(-50%);
+    transform:translate(-50%, -50%);
 
-    background:radial-gradient(
-        circle,
-        rgba(59,130,246,.20),
-        transparent 70%
-    );
+    pointer-events:none;
+}
 
     pointer-events:none;
 }
@@ -305,15 +315,10 @@ footer{
 <header class="hero">
 
     <div class="logo-container">
-
         <img
             class="logo-img"
             src="img/calculus_logo.png"
-      ulus</h1>
-
-        <p>
-        </p>
-
+            alt="Calculus">
     </div>
 
 </header>
