@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Narrador Online - Texto para Voz</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #2563eb;
+            --accent-hover: #1d4ed8;
+            --border-color: #334155;
+            --success-color: #10b981;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 650px;
+            width: 100%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 1.8rem;
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 160px;
+            background-color: #0f172a;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 1rem;
+            resize: vertical;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            background-color: #0f172a;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background-color: #475569;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #334155;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .audio-container {
+            margin-top: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        audio {
+            width: 100%;
+        }
+
+        .download-btn {
+            background-color: var(--success-color);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .download-btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎙️ Narrador Online</h1>
+
+    <div class="form-group">
+        <label for="texto">Digite ou cole o seu roteiro:</label>
+        <textarea id="texto" placeholder="Sabe aquele momento em que você tá empacado numa tarefa..."></textarea>
+    </div>
+
+    <div class="row">
+        <div class="col form-group">
+            <label for="voz">Voz Selecionada:</label>
+            <select id="voz">
+                <option value="pt-BR-AntonioNeural" selected>pt-BR-AntonioNeural (Masculina)</option>
+                <option value="pt-BR-FranciscaNeural">pt-BR-FranciscaNeural (Feminina)</option>
+                <option value="pt-BR-ThalitaNeural">pt-BR-ThalitaNeural (Feminina Jovem)</option>
+                <option value="pt-PT-DuarteNeural">pt-PT-DuarteNeural (Masculina - PT)</option>
+                <option value="pt-PT-RaquelNeural">pt-PT-RaquelNeural (Feminina - PT)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col form-group">
+            <label for="velocidade">Velocidade: <span id="valVelocidade">1.0</span>x</label>
+            <input type="range" id="velocidade" min="0.5" max="1.5" step="0.1" value="1.0">
+        </div>
+        <div class="col form-group">
+            <label for="tom">Tom (Pitch): <span id="valTom">0</span></label>
+            <input type="range" id="tom" min="-10" max="10" step="1" value="0">
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-primary" id="btnOuvir">▶ Ouvir / Gerar Áudio</button>
+        <button class="btn-secondary" id="btnParar">⏹ Parar</button>
+    </div>
+
+    <div class="status" id="status">Pronto para narrar.</div>
+
+    <div class="audio-container" id="audioContainer">
+        <audio id="audioPlayer" controls></audio>
+        <a id="downloadBtn" class="download-btn" href="#" download="narracao.wav">⬇️ Baixar Áudio (.wav)</a>
+    </div>
+</div>
+
+<script>
+    const synth = window.speechSynthesis;
+    let vozesDisponiveis = [];
+
+    const selectVoz = document.getElementById('voz');
+    const inputTexto = document.getElementById('texto');
+    const inputVelocidade = document.getElementById('velocidade');
+    const inputTom = document.getElementById('tom');
+    const valVelocidade = document.getElementById('valVelocidade');
+    const valTom = document.getElementById('valTom');
+    const statusDiv = document.getElementById('status');
+    const audioContainer = document.getElementById('audioContainer');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    inputVelocidade.addEventListener('input', () => valVelocidade.innerText = inputVelocidade.value);
+    inputTom.addEventListener('input', () => valTom.innerText = inputTom.value);
+
+    function carregarVozes() {
+        vozesDisponiveis = synth.getVoices();
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = carregarVozes;
+    }
+
+    document.getElementById('btnOuvir').addEventListener('click', () => {
+        const texto = inputTexto.value.trim();
+        if (!texto) {
+            statusDiv.innerText = "Por favor, insira algum texto no campo acima.";
+            return;
+        }
+
+        synth.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.rate = parseFloat(inputVelocidade.value);
+        utterance.pitch = (parseFloat(inputTom.value) / 10) + 1;
+
+        const opcaoSelecionada = selectVoz.value;
+        const eMasculino = opcaoSelecionada.includes('Antonio') || opcaoSelecionada.includes('Duarte');
+
+        // Busca voz em Português condizente com o gênero selecionado
+        const vozPt = vozesDisponiveis.find(v => 
+            v.lang.startsWith('pt') && (
+                eMasculino 
+                    ? (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('antonio') || v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('ricardo'))
+                    : (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('francisca') || v.name.toLowerCase().includes('helena') || v.name.toLowerCase().includes('maria'))
+            )
+        ) || vozesDisponiveis.find(v => v.lang.startsWith('pt'));
+
+        if (vozPt) {
+            utterance.voice = vozPt;
+        }
+
+        utterance.onstart = () => {
+            statusDiv.innerText = "Narrando texto...";
+        };
+
+        utterance.onend = () => {
+            statusDiv.innerText = "Narração concluída.";
+        };
+
+        utterance.onerror = (e) => {
+            statusDiv.innerText = "Erro durante a execução do áudio.";
+            console.error(e);
+        };
+
+        synth.speak(utterance);
+    });
+
+    document.getElementById('btnParar').addEventListener('click', () => {
+        synth.cancel();
+        statusDiv.innerText = "Execução pausada.";
+    });
+
+    carregarVozes();
+</script>
+
+</body>
+</html>
