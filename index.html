@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Available Labs</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+:root{
+    --bg:#0d1117;
+    --card:#161b22;
+    --border:#30363d;
+    --text:#f0f6fc;
+    --muted:#8b949e;
+    --accent:#3b82f6;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:40px 20px;
+}
+
+header{
+    position:relative;
+    text-align:center;
+    padding:80px 0;
+    overflow:hidden;
+}
+
+.logo-main{
+    width:100px;
+    margin-bottom:20px;
+    position:relative;
+    z-index:2;
+}
+
+.logo-bg{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:420px;
+    max-width:80vw;
+
+    opacity:.05;
+
+    pointer-events:none;
+    user-select:none;
+
+    filter:
+        drop-shadow(0 0 40px rgba(255,255,255,.08))
+        drop-shadow(0 0 80px rgba(59,130,246,.08));
+}
+
+header h1{
+    position:relative;
+    z-index:2;
+
+    font-size:3rem;
+    font-weight:700;
+
+    letter-spacing:-2px;
+}
+
+header p{
+    position:relative;
+    z-index:2;
+
+    margin-top:12px;
+
+    color:var(--muted);
+    font-size:1rem;
+}
+
+.section-title{
+    margin-bottom:25px;
+
+    font-size:1.3rem;
+    font-weight:600;
+}
+
+.apps-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:20px;
+}
+
+.app-card{
+    background:var(--card);
+    border:1px solid var(--border);
+
+    border-radius:16px;
+
+    padding:24px;
+
+    text-decoration:none;
+    color:var(--text);
+
+    transition:all .25s ease;
+}
+
+.app-card:hover{
+    transform:translateY(-4px);
+
+    border-color:var(--accent);
+
+    box-shadow:
+        0 0 30px rgba(59,130,246,.15);
+}
+
+.badge{
+    display:inline-block;
+
+    margin-bottom:12px;
+
+    padding:6px 10px;
+
+    border-radius:999px;
+
+    font-size:.75rem;
+    font-weight:600;
+
+    color:var(--accent);
+
+    background:rgba(59,130,246,.10);
+}
+
+.app-card h2{
+    margin-bottom:10px;
+    font-size:1.2rem;
+}
+
+.app-card p{
+    color:var(--muted);
+    line-height:1.5;
+}
+
+.open-link{
+    display:inline-block;
+    margin-top:18px;
+
+    color:var(--accent);
+    font-weight:600;
+}
+
+footer{
+    margin-top:60px;
+    padding:25px 0;
+
+    text-align:center;
+
+    color:var(--muted);
+
+    border-top:1px solid var(--border);
+}
+
+@media (max-width:768px){
+
+    header h1{
+        font-size:2.2rem;
+    }
+
+    .logo-bg{
+        width:300px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+
+    <img
+        src="img/youtubefactory_icon_white.png"
+        class="logo-bg"
+        alt="Available Labs">
+
+    <img
+         alt="Available Labs">
+
+    <h1>Available Labs</h1>
+
+    <p>
+        Ecossistema2 class="section-title">
+    Aplicações Disponíveis
+</h2>
+
+<div class="apps-grid" id="appsGrid"></div>
+
+<footer>
+    Available Labs © 2026
+</footer>
+
+</div>
+
+<script>
+
+const apps = [
+
+{
+    nome: "Youtube Factory",
+    tipo: "IA & Conteúdo",
+    descricao: "Plataforma para criação automatizada de conteúdo para YouTube.",
+    url: "https://tesseractrix.github.io/availablelabs/youtube_factory.html"
+},
+
+{
+    nome: "Dictum",
+    tipo: "Voz Neural",
+    descricao: "Conversão de texto para áudio utilizando síntese de voz avançada.",
+    url: "https://tesseractrix.github.io/availablelabs/dictum"
+},
+
+{
+    nome: "Calculus",
+    tipo: "Utilitário",
+    descricao: "Ferramentas matemáticas e cálculos rápidos para produtividade.",
+    url: "https://tesseractrix.github.io/availablelabs/calculus"
+},
+
+{
+    nome: "Neon Bastion",
+    tipo: "Experiência",
+    descricao: "Projeto experimental do ecossistema Available Labs.",
+    url: "https://tesseractrix.github.io/availablelabs/neon-bastion.html"
+}
+
+];
+
+const grid = document.getElementById("appsGrid");
+
+apps.forEach(app => {
+
+    const card = document.createElement("a");
+
+    card.className = "app-card";
+    card.href = app.url;
+    card.target = "_blank";
+
+    card.innerHTML = `
+        <div class="badge">${app.tipo}</div>
+        <h2>${app.nome}</h2>
+        <p>${app.descricao}</p>
+        <span class="open-link">Abrir →</span>
+    `;
+
+    grid.appendChild(card);
+
+});
+
+</script>
+
+</body>
+</html>
