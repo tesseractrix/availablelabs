@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crystal Clicker</title>
+<style>
+  :root{
+    --bg1:#1a0b2e; --bg2:#0f0524; --accent:#a86bff; --accent2:#ff6bd6;
+    --gold:#ffd76b; --panel:#241338; --panel-border:#3d1f5c; --text:#f1e9ff;
+    --green:#6bffb0;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+  html,body{height:100%; margin:0; overflow:hidden;}
+  body{
+    font-family:'Segoe UI',system-ui,sans-serif;
+    background:radial-gradient(circle at 50% 20%, var(--bg1), var(--bg2));
+    color:var(--text); display:flex; flex-direction:column; height:100vh; position:relative;
+  }
+
+  .stars{position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0;}
+  .star{position:absolute; background:#fff; border-radius:50%; opacity:.6; animation:twinkle 3s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:.15;} 50%{opacity:.9;}}
+
+  header{padding:14px 16px 6px; text-align:center; flex-shrink:0; position:relative; z-index:1;}
+  header h1{margin:0; font-size:1.4rem; letter-spacing:1px; color:var(--gold); text-shadow:0 0 12px rgba(255,215,107,.5);}
+  .stats{display:flex; justify-content:center; gap:16px; margin-top:6px; font-size:.85rem; opacity:.9; flex-wrap:wrap;}
+  .stats b{color:var(--accent2);}
+
+  .click-area{flex:1; display:flex; align-items:center; justify-content:center; position:relative; min-height:0; z-index:1;}
+  #crystal{
+    width:min(45vw,220px); height:min(45vw,220px); cursor:pointer;
+    filter:drop-shadow(0 0 20px rgba(168,107,255,.55));
+    transition:transform .08s; touch-action:manipulation;
+    animation:pulse 2.6s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{filter:drop-shadow(0 0 18px rgba(168,107,255,.5));}
+    50%{filter:drop-shadow(0 0 34px rgba(255,107,214,.75));}
+  }
+  #crystal:active{transform:scale(.9);}
+
+  .float{position:absolute; pointer-events:none; font-weight:bold; color:var(--gold); animation:rise .9s ease-out forwards; font-size:1.1rem; text-shadow:0 0 6px #000; z-index:5;}
+  @keyframes rise{0%{opacity:1; transform:translateY(0) scale(1);} 100%{opacity:0; transform:translateY(-70px) scale(1.3);}}
+
+  .spark{position:absolute; width:6px; height:6px; border-radius:50%; background:var(--accent2); pointer-events:none; z-index:4; animation:sparkfly .6s ease-out forwards;}
+  @keyframes sparkfly{
+    0%{opacity:1; transform:translate(0,0) scale(1);}
+    100%{opacity:0; transform:translate(var(--dx), var(--dy)) scale(.2);}
+  }
+
+  .boost-btn{margin:0 auto 8px; display:block; background:linear-gradient(135deg,var(--accent2),#ff9a3d); border:none; color:#1a0b2e; font-weight:bold; padding:10px 20px; border-radius:30px; font-size:.9rem; box-shadow:0 4px 14px rgba(255,107,214,.4); cursor:pointer; z-index:1; position:relative;}
+  .boost-btn:disabled{opacity:.45; filter:grayscale(.6);}
+
+  #adSlotBottom{flex-shrink:0; min-height:46px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.25); font-size:.68rem; opacity:.5; letter-spacing:1px; z-index:1;}
+
+  .panel{background:var(--panel); border-top:1px solid var(--panel-border); padding:10px 12px 14px; flex-shrink:0; max-height:38vh; overflow-y:auto; z-index:1; position:relative;}
+  .tabs{display:flex; gap:6px; margin-bottom:10px; overflow-x:auto;}
+  .tab{flex:1; min-width:72px; text-align:center; padding:8px 4px; border-radius:10px; background:#2f1a48; font-size:.78rem; cursor:pointer; opacity:.6; white-space:nowrap;}
+  .tab.active{opacity:1; background:var(--accent); color:#1a0b2e; font-weight:bold;}
+
+  .shop-item{display:flex; align-items:center; justify-content:space-between; gap:10px; background:#2c1745; border:1px solid var(--panel-border); border-radius:12px; padding:10px 12px; margin-bottom:8px; transition:opacity .2s;}
+  .shop-item.disabled{opacity:.45;}
+  .shop-item .info{flex:1;}
+  .shop-item .name{font-weight:bold; font-size:.88rem;}
+  .shop-item .desc{font-size:.7rem; opacity:.7;}
+  .shop-item .price{font-size:.78rem; color:var(--gold); white-space:nowrap;}
+  .buy-btn{background:var(--accent); border:none; color:#1a0b2e; font-weight:bold; padding:8px 14px; border-radius:10px; font-size:.82rem; cursor:pointer; transition:transform .1s;}
+  .buy-btn:active{transform:scale(.92);}
+  .buy-btn:disabled{background:#4a3a63; color:#8a7fa0; cursor:default;}
+
+  .ach-item{display:flex; align-items:center; gap:10px; background:#2c1745; border:1px solid var(--panel-border); border-radius:12px; padding:10px 12px; margin-bottom:8px; opacity:.4;}
+  .ach-item.unlocked{opacity:1; border-color:var(--gold);}
+  .ach-icon{font-size:1.5rem;}
+  .ach-name{font-weight:bold; font-size:.85rem;}
+  .ach-desc{font-size:.7rem; opacity:.75;}
+
+  #toast{position:fixed; top:14px; left:50%; transform:translateX(-50%); background:#000c; padding:8px 16px; border-radius:20px; font-size:.85rem; opacity:0; transition:opacity .3s; pointer-events:none; z-index:60;}
+  #toast.show{opacity:1;}
+
+  #achBanner{
+    position:fixed; top:-100px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg, var(--gold), #ff9a3d); color:#1a0b2e;
+    padding:12px 22px; border-radius:16px; font-weight:bold; font-size:.9rem;
+    box-shadow:0 6px 20px rgba(0,0,0,.4); z-index:70; display:flex; align-items:center; gap:10px;
+    transition:top .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  #achBanner.show{top:14px;}
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.65); display:none;
+    align-items:center; justify-content:center; z-index:80; padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:22px; max-width:320px; text-align:center;}
+  .modal-box h2{margin:0 0 8px; color:var(--gold); font-size:1.1rem;}
+  .modal-box p{font-size:.88rem; opacity:.85; margin:0 0 16px;}
+  .modal-box button{background:var(--accent); border:none; color:#1a0b2e; font-weight:bold; padding:10px 24px; border-radius:20px; font-size:.9rem; cursor:pointer;}
+  .modal-box .btn-row{display:flex; gap:10px; justify-content:center;}
+  .modal-box .btn-cancel{background:#4a3a63; color:var(--text);}
+  #prestigeTabContent{text-align:center; padding:10px;}
+  #prestigeTabContent .row{font-size:.85rem; opacity:.85; margin-top:6px;}
+  #prestigeTabContent .gain{color:var(--gold); font-weight:bold;}
+
+  #astralitaFab{
+    position:fixed; top:70px; right:14px; z-index:55;
+    width:52px; height:52px; border-radius:50%;
+    background:linear-gradient(135deg, #6bd6ff, #a86bff);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.45);
+    animation:fabPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes fabPulse{0%,100%{transform:scale(1);} 50%{transform:scale(1.08);}}
+  #astralitaBadge{
+    position:absolute; bottom:-4px; right:-4px; background:var(--gold); color:#1a0b2e;
+    font-size:.62rem; font-weight:bold; border-radius:10px; padding:1px 5px; min-width:16px;
+  }
+  .pack-card{background:#2c1745; border:1px solid var(--panel-border); border-radius:14px; padding:14px; margin:10px 0;}
+  .pack-amount{font-size:1.3rem; font-weight:bold; color:var(--gold);}
+  .pack-price{font-size:.95rem; opacity:.85; margin:4px 0 10px;}
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+<div id="toast"></div>
+<div id="achBanner"><span id="achBannerIcon">🏆</span><span id="achBannerText"></span></div>
+
+<div id="welcomeModal" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Bem-vindo de volta!</h2>
+    <p id="welcomeText"></p>
+    <button onclick="closeWelcome()">Continuar minerando</button>
+  </div>
+</div>
+
+<div id="prestigeModal" class="modal-overlay">
+  <div class="modal-box">
+    <h2>🌌 Ascender?</h2>
+    <p id="prestigeModalText"></p>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closePrestigeConfirm()">Cancelar</button>
+      <button onclick="confirmPrestige()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <h1>💎 CRYSTAL CLICKER</h1>
+  <div class="stats">
+    <div><span id="score">0</span> cristais</div>
+    <div>+<b id="cps">0</b>/seg</div>
+    <div>+<b id="cpc">1</b>/clique</div>
+    <div>🏆 <b id="achCount">0</b>/<span id="achTotal">0</span></div>
+    <div>🌌 <b id="prestigeCount">0</b></div>
+  </div>
+</header>
+
+<div class="click-area">
+  <svg id="crystal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#e6b8ff"/>
+        <stop offset="50%" stop-color="#a86bff"/>
+        <stop offset="100%" stop-color="#5b1fb0"/>
+      </linearGradient>
+    </defs>
+    <polygon points="50,3 85,35 70,97 30,97 15,35" fill="url(#g1)" stroke="#fff" stroke-opacity="0.4" stroke-width="1.5"/>
+    <polygon points="50,3 65,35 50,97 35,35" fill="#fff" fill-opacity="0.15"/>
+  </svg>
+</div>
+
+<button class="boost-btn" id="boostBtn" onclick="watchAdForBoost()">📺 Assistir anúncio: Boost 2x (60s)</button>
+
+<div id="adSlotBottom">[ ESPAÇO RESERVADO PARA BANNER DE ANÚNCIO ]</div>
+
+<div class="panel">
+  <div class="tabs">
+    <div class="tab active" data-tab="miners" onclick="switchTab('miners')">⛏️ Mineradoras</div>
+    <div class="tab" data-tab="power" onclick="switchTab('power')">⚡ Poder</div>
+    <div class="tab" data-tab="special" onclick="switchTab('special')">✨ Especial</div>
+    <div class="tab" data-tab="ach" onclick="switchTab('ach')">🏆 Conquistas</div>
+    <div class="tab" data-tab="prestige" onclick="switchTab('prestige')">🌌 Prestígio</div>
+  </div>
+  <div id="shop-miners"></div>
+  <div id="shop-power" style="display:none;"></div>
+  <div id="shop-special" style="display:none;"></div>
+  <div id="shop-ach" style="display:none;"></div>
+  <div id="shop-prestige" style="display:none;">
+    <div id="prestigeTabContent">
+      <div style="font-size:2rem; font-weight:bold; color:var(--gold); margin-bottom:2px;">Nível <span id="ascensionLevel">0</span></div>
+      <div class="row" style="opacity:.7;">+<b id="prestigeBonusPct">0</b>% de produção permanente</div>
+      <div class="row" style="margin-top:12px;">Cristais desde a última ascensão: <b id="sinceLastPrestige">0</b></div>
+      <div class="row">Necessário para o Nível <span id="prestigeNextLevel">1</span>: <b id="prestigeRequired">0</b></div>
+      <div class="row" id="prestigeNeededRow">Faltam <b id="prestigeNeeded">0</b> cristais</div>
+      <div class="row" style="font-size:.7rem; opacity:.6;">Cristais acumulados na vida do save: <b id="lifetimeScore">0</b></div>
+      <button class="boost-btn" id="prestigeBtn" style="margin-top:14px;" onclick="openPrestigeConfirm()">🌌 Ascender para o Nível 1</button>
+      <div class="row" style="font-size:.68rem; opacity:.6;">Cada nível exige mais cristais que o anterior. Ascender reinicia cristais, mineradoras e upgrades — mas conquistas e nível de ascensão são permanentes.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   CRYSTAL CLICKER
+   - Corrigido: os botões de compra paravam de funcionar porque
+     o jogo recriava TODOS os elementos da loja a cada 100ms
+     (10x por segundo). Em telas de toque, isso cancelava o
+     clique antes que ele fosse registrado, especialmente depois
+     que o jogador já tinha alguma produção por segundo (cps>0),
+     o que ficava mais evidente após usar o boost. Agora os
+     elementos são criados UMA vez e apenas os textos/estado são
+     atualizados a cada tick.
+
+   ONDE ENTRAM OS ANÚNCIOS (AdMob):
+   1) BANNER: div #adSlotBottom.
+   2) INTERSTITIAL: showInterstitialAd().
+   3) RECOMPENSADO: dentro de watchAdForBoost().
+========================================================= */
+
+let state = {
+  score: 0,
+  totalClicks: 0,
+  cpc: 1, cps: 0,
+  boostActive: false, boostMultiplier: 1,
+  boostUsedCount: 0,
+  owned: {},
+  achievements: {},
+  playTimeMs: 0,
+  lastSaveTime: Date.now(),
+  lifetimeScore: 0,
+  prestigePoints: 0,
+  lifetimeScoreAtLastPrestige: 0
+};
+
+const MINERS = [
+  {id:'drone',      name:'Drone Minerador',       desc:'+1 cristal/seg',    baseCost:15,     baseCps:1},
+  {id:'robo',        name:'Robô Escavador',        desc:'+8 cristais/seg',   baseCost:150,    baseCps:8},
+  {id:'plataforma',  name:'Plataforma Espacial',   desc:'+47 cristais/seg',  baseCost:1200,   baseCps:47},
+  {id:'nave',        name:'Nave-Mãe',              desc:'+260 cristais/seg', baseCost:9000,   baseCps:260},
+  {id:'estacao',     name:'Estação Orbital',       desc:'+1.4K cristais/seg',baseCost:65000,  baseCps:1400},
+  {id:'portal',      name:'Portal Interdimensional',desc:'+7.8K cristais/seg',baseCost:480000,baseCps:7800},
+];
+
+const POWERUPS = [
+  {id:'luva',    name:'Luva Reforçada',   desc:'+1 cristal por clique',  baseCost:60,    cpcBonus:1},
+  {id:'laser',   name:'Laser de Mão',     desc:'+5 cristais por clique', baseCost:500,   cpcBonus:5},
+  {id:'martelo', name:'Martelo Quântico', desc:'+25 cristais por clique',baseCost:4000,  cpcBonus:25},
+  {id:'luvapura',name:'Luva de Cristal Puro', desc:'+120 cristais/clique', baseCost:28000, cpcBonus:120},
+  {id:'manopla', name:'Manopla Cósmica',  desc:'+600 cristais/clique',   baseCost:220000, cpcBonus:600},
+];
+
+const SPECIALS = [
+  {id:'core', name:'Núcleo de Cristal', desc:'+5% em TODA a produção (empilha infinitamente)', baseCost:800, growth:1.85},
+];
+
+const ACHIEVEMENTS = [
+  {id:'click1',   icon:'👆', name:'Primeiro Toque',        desc:'Clique no cristal pela 1ª vez',        cond:s=>s.totalClicks>=1},
+  {id:'click500', icon:'🖐️', name:'Dedo Rápido',           desc:'500 cliques no total',                  cond:s=>s.totalClicks>=500},
+  {id:'click5000',icon:'🤾', name:'Clique Lendário',        desc:'5.000 cliques no total',                cond:s=>s.totalClicks>=5000},
+  {id:'score100', icon:'💰', name:'Primeiros Cristais',     desc:'Acumule 100 cristais',                  cond:s=>s.score>=100},
+  {id:'score1k',  icon:'📈', name:'Pequena Fortuna',        desc:'Acumule 1.000 cristais',                cond:s=>s.score>=1000},
+  {id:'score1m',  icon:'🏦', name:'Milionário de Cristais', desc:'Acumule 1.000.000 cristais',            cond:s=>s.score>=1000000},
+  {id:'score1b',  icon:'👑', name:'Bilionário Cósmico',     desc:'Acumule 1.000.000.000 cristais',        cond:s=>s.score>=1000000000},
+  {id:'firstminer',icon:'⛏️',name:'Primeira Mineradora',    desc:'Compre 1 Drone Minerador',              cond:s=>(s.owned.drone||0)>=1},
+  {id:'fullfleet',icon:'🚀', name:'Frota Completa',         desc:'Tenha ao menos 1 de cada mineradora',   cond:s=>MINERS.every(m=>(s.owned[m.id]||0)>=1)},
+  {id:'stack10',  icon:'📦', name:'Colecionador',           desc:'Tenha 10 de um mesmo upgrade',          cond:s=>Object.values(s.owned).some(q=>q>=10)},
+  {id:'adfan',    icon:'📺', name:'Fã de Anúncios',         desc:'Assista ao anúncio de boost 5 vezes',   cond:s=>s.boostUsedCount>=5},
+  {id:'longsession',icon:'⏳',name:'Sessão Longa',          desc:'Jogue por 5 minutos seguidos',          cond:s=>s.playTimeMs>=5*60*1000},
+  {id:'playtime1h', icon:'🕐', name:'Dedicação',             desc:'Jogue por 1 hora acumulada',             cond:s=>s.playTimeMs>=60*60*1000},
+  {id:'clicks20000',icon:'⚡', name:'Fúria de Cliques',       desc:'20.000 cliques no total',                cond:s=>s.totalClicks>=20000},
+  {id:'score1t',    icon:'🌠', name:'Trilionário Estelar',   desc:'Acumule 1.000.000.000.000 cristais',     cond:s=>s.score>=1000000000000},
+  {id:'stack50',    icon:'🏭', name:'Produção em Massa',     desc:'Tenha 50 unidades de um mesmo upgrade',  cond:s=>Object.values(s.owned).some(q=>q>=50)},
+  {id:'core25',     icon:'🔮', name:'Núcleo Supremo',        desc:'Tenha 25 Núcleos de Cristal',            cond:s=>(s.owned.core||0)>=25},
+  {id:'fullpower',  icon:'💪', name:'Poder Total',           desc:'Tenha ao menos 1 de cada upgrade de poder', cond:s=>POWERUPS.every(p=>(s.owned[p.id]||0)>=1)},
+  {id:'adfan20',    icon:'🎬', name:'Maratonista de Anúncios', desc:'Assista 20 anúncios de boost',         cond:s=>s.boostUsedCount>=20},
+  {id:'ascend5',    icon:'🪐', name:'Veterano da Ascensão',  desc:'Alcance o nível de ascensão 5',          cond:s=>(s.prestigePoints||0)>=5},
+  {id:'ascend25',   icon:'🌟', name:'Lenda Cósmica',         desc:'Alcance o nível de ascensão 25',         cond:s=>(s.prestigePoints||0)>=25},
+  {id:'prestige1',  icon:'🌌', name:'Primeira Ascensão',     desc:'Ascenda pela 1ª vez (prestígio)',       cond:s=>(s.prestigePoints||0)>=1},
+  {id:'prestige10', icon:'♾️', name:'Mestre do Prestígio',   desc:'Acumule 10 pontos de prestígio',        cond:s=>(s.prestigePoints||0)>=10},
+];
+
+const shopRefs = {};
+
+function totalOwnedAll(){
+  return Object.values(state.owned).reduce((a,b)=>a+b, 0);
+}
+
+// O custo de cada item sobe exponencialmente conforme você compra MAIS
+// daquele mesmo item (growth^qty), e uma pequena "taxa" extra é somada
+// com base no total de itens que você já possui no geral — isso faz a
+// economia ficar proporcionalmente mais cara conforme o jogo avança,
+// exigindo mais tempo de jogo para progredir.
+function costFor(base, qty, growth){
+  growth = growth || 1.18;
+  const globalTax = 1 + 0.015 * totalOwnedAll();
+  return Math.ceil(base * Math.pow(growth, qty) * globalTax);
+}
+
+function fmt(n){
+  if(n < 1000) return Math.floor(n).toString();
+  const units = ['K','M','B','T','Qa','Qi'];
+  let u = -1;
+  while(n >= 1000 && u < units.length-1){ n/=1000; u++; }
+  return n.toFixed(2) + units[u];
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function clickCrystal(e){
+  const gain = state.cpc * state.boostMultiplier;
+  addScore(gain);
+  state.totalClicks++;
+  spawnFloatText('+' + fmt(gain), e);
+  spawnSparks(e);
+  updateHeader();
+  updateAllShops();
+  checkAchievements();
+
+  if(state.totalClicks % 80 === 0){ showInterstitialAd(); }
+  saveGame();
+}
+
+function spawnFloatText(text, e){
+  const el = document.createElement('div');
+  el.className = 'float';
+  el.textContent = text;
+  const area = document.querySelector('.click-area');
+  const rect = area.getBoundingClientRect();
+  const x = (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) - rect.left;
+  const y = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY) - rect.top;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  area.appendChild(el);
+  setTimeout(()=>el.remove(), 900);
+}
+
+function spawnSparks(e){
+  const area = document.querySelector('.click-area');
+  const rect = area.getBoundingClientRect();
+  const x = (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) - rect.left;
+  const y = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY) - rect.top;
+  const colors = ['#ff6bd6','#a86bff','#ffd76b','#6bffb0'];
+  for(let i=0;i<7;i++){
+    const s = document.createElement('div');
+    s.className = 'spark';
+    const angle = Math.random()*Math.PI*2;
+    const dist = 30 + Math.random()*40;
+    s.style.setProperty('--dx', Math.cos(angle)*dist + 'px');
+    s.style.setProperty('--dy', Math.sin(angle)*dist + 'px');
+    s.style.left = x + 'px';
+    s.style.top = y + 'px';
+    s.style.background = colors[i % colors.length];
+    area.appendChild(s);
+    setTimeout(()=>s.remove(), 650);
+  }
+}
+
+function buyMiner(id){ attemptBuy(id, MINERS); }
+function buyPower(id){ attemptBuy(id, POWERUPS); }
+function buySpecial(id){ attemptBuy(id, SPECIALS); }
+
+function attemptBuy(id, list){
+  const item = list.find(x=>x.id===id);
+  const qty = state.owned[id] || 0;
+  const cost = costFor(item.baseCost, qty, item.growth);
+  if(state.score >= cost){
+    state.score -= cost;
+    state.owned[id] = qty + 1;
+    recalc();
+    updateHeader();
+    updateAllShops();
+    checkAchievements();
+    saveGame();
+  }
+}
+
+function recalc(){
+  let cps = 0;
+  MINERS.forEach(m => cps += (state.owned[m.id]||0) * m.baseCps);
+  let cpc = 1;
+  POWERUPS.forEach(p => cpc += (state.owned[p.id]||0) * p.cpcBonus);
+
+  const coreQty = state.owned.core || 0;
+  const achCount = Object.values(state.achievements).filter(Boolean).length;
+  const prestigeMult = 1 + 0.10*(state.prestigePoints||0);
+  const mult = (1 + 0.05*coreQty) * (1 + 0.02*achCount) * prestigeMult;
+
+  state.cps = cps * mult;
+  state.cpc = cpc * mult;
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  document.getElementById('shop-miners').style.display  = tab==='miners'  ? 'block':'none';
+  document.getElementById('shop-power').style.display   = tab==='power'   ? 'block':'none';
+  document.getElementById('shop-special').style.display = tab==='special' ? 'block':'none';
+  document.getElementById('shop-ach').style.display     = tab==='ach'     ? 'block':'none';
+  document.getElementById('shop-prestige').style.display = tab==='prestige' ? 'block':'none';
+}
+
+function updateHeader(){
+  document.getElementById('score').textContent = fmt(state.score);
+  document.getElementById('cps').textContent = fmt(state.cps * state.boostMultiplier);
+  document.getElementById('cpc').textContent = fmt(state.cpc * state.boostMultiplier);
+  document.getElementById('achCount').textContent = Object.values(state.achievements).filter(Boolean).length;
+  document.getElementById('achTotal').textContent = ACHIEVEMENTS.length;
+  document.getElementById('prestigeCount').textContent = state.prestigePoints||0;
+}
+
+/* ---- Prestígio ----
+   Cada ascensão sobe exatamente 1 NÍVEL. O requisito de cristais
+   (ganhos desde a última ascensão) aumenta a cada nível, então a
+   próxima ascensão é sempre mais cara que a anterior. */
+
+const PRESTIGE_BASE = 1000000;    // cristais exigidos para o nível 1
+const PRESTIGE_GROWTH = 1.6;      // cada nível exige 60% mais que o anterior
+
+function addScore(amount){
+  state.score += amount;
+  state.lifetimeScore = (state.lifetimeScore||0) + amount;
+}
+
+function ascensionLevel(){
+  return state.prestigePoints||0;
+}
+
+// Cristais ganhos DESDE A ÚLTIMA ASCENSÃO (checkpoint) — nunca o total
+// acumulado na vida do save, senão o requisito nunca mais travaria.
+function sinceLastPrestige(){
+  return Math.max(0, (state.lifetimeScore||0) - (state.lifetimeScoreAtLastPrestige||0));
+}
+
+function requiredForNextLevel(){
+  return Math.ceil(PRESTIGE_BASE * Math.pow(PRESTIGE_GROWTH, ascensionLevel()));
+}
+
+function canAscendNow(){
+  return sinceLastPrestige() >= requiredForNextLevel();
+}
+
+function updatePrestigeUI(){
+  const level = ascensionLevel();
+  document.getElementById('ascensionLevel').textContent = level;
+  document.getElementById('lifetimeScore').textContent = fmt(state.lifetimeScore||0);
+  document.getElementById('sinceLastPrestige').textContent = fmt(sinceLastPrestige());
+  document.getElementById('prestigeBonusPct').textContent = level*10;
+  document.getElementById('prestigeRequired').textContent = fmt(requiredForNextLevel());
+  document.getElementById('prestigeNextLevel').textContent = level+1;
+  const needed = Math.max(0, requiredForNextLevel() - sinceLastPrestige());
+  document.getElementById('prestigeNeeded').textContent = fmt(needed);
+  document.getElementById('prestigeBtn').textContent = `🌌 Ascender para o Nível ${level+1}`;
+  document.getElementById('prestigeBtn').disabled = !canAscendNow();
+}
+
+function openPrestigeConfirm(){
+  if(!canAscendNow()){
+    const needed = requiredForNextLevel() - sinceLastPrestige();
+    showToast(`Faltam ${fmt(needed)} cristais (desde a última ascensão) para alcançar o Nível ${ascensionLevel()+1}.`);
+    return;
+  }
+  const nextLevel = ascensionLevel()+1;
+  document.getElementById('prestigeModalText').textContent =
+    `Você vai ascender para o Nível ${nextLevel} (+${nextLevel*10}% de produção permanente no total). Cristais, mineradoras e upgrades serão reiniciados. Conquistas e nível de ascensão são mantidos para sempre.`;
+  document.getElementById('prestigeModal').classList.add('show');
+}
+
+function closePrestigeConfirm(){
+  document.getElementById('prestigeModal').classList.remove('show');
+}
+
+function confirmPrestige(){
+  if(!canAscendNow()) return;
+  state.prestigePoints = ascensionLevel() + 1;
+  state.lifetimeScoreAtLastPrestige = state.lifetimeScore||0; // novo checkpoint
+  state.score = 0;
+  state.owned = {};
+  state.boostActive = false;
+  state.boostMultiplier = 1;
+  const btn = document.getElementById('boostBtn');
+  btn.disabled = false;
+  btn.textContent = '📺 Assistir anúncio: Boost 2x (60s)';
+
+  recalc();
+  updateHeader();
+  updateAllShops();
+  updatePrestigeUI();
+  checkAchievements();
+  closePrestigeConfirm();
+  showToast(`🌌 Você ascendeu para o Nível ${state.prestigePoints}!`);
+  saveGame();
+}
+
+/* ---- Loja: construída UMA vez, depois só atualizada (corrige o bug) ---- */
+
+function buildShopUI(containerId, items, buyFn){
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  items.forEach(item=>{
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    div.innerHTML = `
+      <div class="info">
+        <div class="name"></div>
+        <div class="desc">${item.desc}</div>
+      </div>
+      <div><div class="price"></div></div>
+      <button class="buy-btn">Comprar</button>
+    `;
+    div.querySelector('.buy-btn').addEventListener('click', ()=>buyFn(item.id));
+    container.appendChild(div);
+    shopRefs[item.id] = {
+      container: div,
+      nameEl: div.querySelector('.name'),
+      priceEl: div.querySelector('.price'),
+      buyBtn: div.querySelector('.buy-btn'),
+      item
+    };
+  });
+}
+
+function updateShopItem(id){
+  const ref = shopRefs[id];
+  if(!ref) return;
+  const qty = state.owned[id] || 0;
+  const cost = costFor(ref.item.baseCost, qty, ref.item.growth);
+  const canAfford = state.score >= cost;
+  ref.nameEl.textContent = ref.item.name + (qty>0 ? ' ('+qty+')' : '');
+  ref.priceEl.textContent = fmt(cost) + ' 💎';
+  ref.buyBtn.disabled = !canAfford;
+  ref.container.classList.toggle('disabled', !canAfford);
+}
+
+function updateAllShops(){
+  MINERS.forEach(m=>updateShopItem(m.id));
+  POWERUPS.forEach(p=>updateShopItem(p.id));
+  SPECIALS.forEach(s=>updateShopItem(s.id));
+}
+
+/* ---- Conquistas ---- */
+
+function buildAchievementsUI(){
+  const container = document.getElementById('shop-ach');
+  container.innerHTML = '';
+  ACHIEVEMENTS.forEach(a=>{
+    const unlocked = !!state.achievements[a.id];
+    const div = document.createElement('div');
+    div.className = 'ach-item' + (unlocked ? ' unlocked':'');
+    div.innerHTML = `
+      <div class="ach-icon">${unlocked ? a.icon : '🔒'}</div>
+      <div>
+        <div class="ach-name">${a.name}</div>
+        <div class="ach-desc">${a.desc}</div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function checkAchievements(){
+  let unlockedSomething = false;
+  ACHIEVEMENTS.forEach(a=>{
+    if(!state.achievements[a.id] && a.cond(state)){
+      state.achievements[a.id] = true;
+      unlockedSomething = true;
+      showAchievementBanner(a);
+    }
+  });
+  if(unlockedSomething){
+    recalc();
+    updateHeader();
+    updateAllShops();
+    buildAchievementsUI();
+  }
+}
+
+function showAchievementBanner(a){
+  const banner = document.getElementById('achBanner');
+  document.getElementById('achBannerIcon').textContent = a.icon;
+  document.getElementById('achBannerText').textContent = 'Conquista desbloqueada: ' + a.name;
+  banner.classList.add('show');
+  clearTimeout(showAchievementBanner._h);
+  showAchievementBanner._h = setTimeout(()=>banner.classList.remove('show'), 3200);
+}
+
+/* ---- Anúncios ---- */
+
+function showInterstitialAd(){
+  console.log('[ADS] Exibir anúncio intersticial aqui.');
+}
+
+function watchAdForBoost(){
+  if(state.boostActive) return;
+  console.log('[ADS] Exibir anúncio recompensado aqui. No callback de sucesso, chamar activateBoost().');
+  showToast('Simulando anúncio recompensado...');
+  setTimeout(activateBoost, 1200);
+}
+
+function activateBoost(){
+  state.boostActive = true;
+  state.boostMultiplier = 2;
+  state.boostUsedCount++;
+  const btn = document.getElementById('boostBtn');
+  btn.disabled = true;
+  let seconds = 60;
+  btn.textContent = `⚡ Boost 2x ativo (${seconds}s)`;
+  updateHeader();
+  checkAchievements();
+  const interval = setInterval(()=>{
+    seconds--;
+    btn.textContent = `⚡ Boost 2x ativo (${seconds}s)`;
+    if(seconds<=0){
+      clearInterval(interval);
+      state.boostActive = false;
+      state.boostMultiplier = 1;
+      btn.disabled = false;
+      btn.textContent = '📺 Assistir anúncio: Boost 2x (60s)';
+      updateHeader();
+    }
+  }, 1000);
+}
+
+/* ---- Fundo de estrelas ---- */
+
+function buildStars(){
+  const container = document.getElementById('stars');
+  const count = 40;
+  for(let i=0;i<count;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = 1 + Math.random()*2;
+    s.style.width = size+'px';
+    s.style.height = size+'px';
+    s.style.left = Math.random()*100 + '%';
+    s.style.top = Math.random()*100 + '%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    s.style.animationDuration = (2+Math.random()*3)+'s';
+    container.appendChild(s);
+  }
+}
+
+/* ---- Persistência + ganhos offline ---- */
+
+function saveGame(){
+  state.lastSaveTime = Date.now();
+  try{ localStorage.setItem('crystalClickerSave', JSON.stringify(state)); }catch(e){}
+}
+
+function loadGame(){
+  let offlineSeconds = 0;
+  try{
+    const raw = localStorage.getItem('crystalClickerSave');
+    if(raw){
+      const loaded = JSON.parse(raw);
+      const previousLastSave = loaded.lastSaveTime || Date.now();
+      // Saves salvos ANTES desta correção não tinham o campo
+      // lifetimeScoreAtLastPrestige. Sem essa checagem, ao carregar
+      // esse save o jogo tratava TODO o histórico de cristais como
+      // "desde a última ascensão", liberando o botão instantaneamente.
+      const hadNoCheckpoint = !('lifetimeScoreAtLastPrestige' in loaded);
+      state = Object.assign(state, loaded);
+      if(hadNoCheckpoint){
+        state.lifetimeScoreAtLastPrestige = state.lifetimeScore || 0;
+      }
+      offlineSeconds = Math.max(0, (Date.now() - previousLastSave) / 1000);
+    }
+  }catch(e){}
+  return offlineSeconds;
+}
+
+function applyOfflineEarnings(offlineSeconds){
+  recalc();
+  const cappedSeconds = Math.min(offlineSeconds, 2*60*60); // máx. 2 horas
+  if(cappedSeconds >= 30 && state.cps > 0){
+    const earned = state.cps * cappedSeconds;
+    addScore(earned);
+    document.getElementById('welcomeText').textContent =
+      `Suas mineradoras trabalharam enquanto você estava fora e renderam ${fmt(earned)} cristais!`;
+    document.getElementById('welcomeModal').classList.add('show');
+  }
+}
+
+function closeWelcome(){
+  document.getElementById('welcomeModal').classList.remove('show');
+  saveGame();
+}
+
+/* ---- Inicialização ---- */
+
+document.getElementById('crystal').addEventListener('click', clickCrystal);
+document.getElementById('crystal').addEventListener('touchend', function(e){ e.preventDefault(); clickCrystal(e); });
+
+buildStars();
+buildShopUI('shop-miners', MINERS, buyMiner);
+buildShopUI('shop-power', POWERUPS, buyPower);
+buildShopUI('shop-special', SPECIALS, buySpecial);
+buildAchievementsUI();
+
+const offlineSeconds = loadGame();
+recalc();
+updateHeader();
+updateAllShops();
+buildAchievementsUI();
+applyOfflineEarnings(offlineSeconds);
+checkAchievements();
+updatePrestigeUI();
+
+setInterval(()=>{
+  state.playTimeMs += 100;
+  if(state.cps > 0){
+    addScore(state.cps * state.boostMultiplier / 10);
+  }
+  updateHeader();
+  updateAllShops();
+  updatePrestigeUI();
+  checkAchievements();
+}, 100);
+
+setInterval(saveGame, 5000);
+</script>
+</body>
+</html>
