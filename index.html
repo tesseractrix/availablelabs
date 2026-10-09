@@ -63,14 +63,31 @@ header{
     transform:translate(-50%,-50%);
     width:420px;
     max-width:80vw;
+
     opacity:.25;
+
     pointer-events:none;
     user-select:none;
-    z-index:0;
 
     filter:
         drop-shadow(0 0 40px rgba(255,255,255,.08))
         drop-shadow(0 0 80px rgba(59,130,246,.08));
+
+    -webkit-mask-image: radial-gradient(
+        circle,
+        rgba(0,0,0,1) 35%,
+        rgba(0,0,0,.9) 55%,
+        rgba(0,0,0,.5) 75%,
+        rgba(0,0,0,0) 100%
+    );
+
+    mask-image: radial-gradient(
+        circle,
+        rgba(0,0,0,1) 35%,
+        rgba(0,0,0,.9) 55%,
+        rgba(0,0,0,.5) 75%,
+        rgba(0,0,0,0) 100%
+    );
 }
 
 header::after{
@@ -82,9 +99,9 @@ header::after{
 
     background:radial-gradient(
         circle,
-        rgba(13,17,23,0) 35%,
-        rgba(13,17,23,0.35) 60%,
-        rgba(13,17,23,0.75) 80%,
+        rgba(13,17,23,0) 45%,
+        rgba(13,17,23,0.35) 70%,
+        rgba(13,17,23,0.75) 90%,
         rgba(13,17,23,1) 100%
     );
 }
