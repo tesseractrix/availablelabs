@@ -6,7 +6,7 @@
 
 <title>Available Labs</title>
 
-<link rel="icon" type="image/png" href="img/availablelabs_white_icon.png">
+<link rel="icon" type="image/png" href="img/availablelabs_icon.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,15 +63,30 @@ header{
     transform:translate(-50%,-50%);
     width:420px;
     max-width:80vw;
-
     opacity:.25;
-
     pointer-events:none;
     user-select:none;
+    z-index:0;
 
     filter:
         drop-shadow(0 0 40px rgba(255,255,255,.08))
         drop-shadow(0 0 80px rgba(59,130,246,.08));
+}
+
+header::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+
+    background:radial-gradient(
+        circle,
+        rgba(13,17,23,0) 35%,
+        rgba(13,17,23,0.35) 60%,
+        rgba(13,17,23,0.75) 80%,
+        rgba(13,17,23,1) 100%
+    );
 }
 
 header h1{
