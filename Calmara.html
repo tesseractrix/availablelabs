@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Calmara</title>
+<style>
+:root{--bg:#0e1322;--ink:#dff3ef;--dim:#8793c4;--glow:#7fe3d6}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;
+ font-family:"Avenir Next","Segoe UI",Roboto,sans-serif;touch-action:manipulation;
+ -webkit-tap-highlight-color:transparent;user-select:none}
+#app{display:flex;flex-direction:column;height:100%;max-width:520px;margin:0 auto;border-inline:1px solid #1b2340;padding-top:env(safe-area-inset-top,0px)}
+#hud{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;font-size:18px;letter-spacing:.04em;font-weight:300}
+#hud button{background:none;border:1px solid #3a4676;color:var(--ink);border-radius:20px;padding:6px 14px;font-size:14px}
+#stage{flex:1;position:relative;min-height:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+#banner{height:calc(50px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);
+ display:flex;align-items:center;justify-content:center;font-size:12px;color:#55608f;border-top:1px solid #1b2340}
+.ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ text-align:center;background:rgba(14,19,34,.92);transition:opacity .8s;z-index:5;padding:24px}
+.ov.hide{opacity:0;pointer-events:none}
+.ov h1{font-weight:200;font-size:40px;letter-spacing:.16em;margin:0 0 12px;color:var(--glow)}
+.ov p{margin:0;color:var(--dim);font-size:16px;max-width:280px;line-height:1.5}
+#win{background:none;pointer-events:none;font-size:26px;font-weight:200;letter-spacing:.1em;color:var(--glow)}
+#ad button{margin-top:22px;background:none;border:1px solid var(--glow);color:var(--glow);border-radius:24px;padding:10px 28px;font-size:16px}
+#ad button:disabled{opacity:.35}
+.panel{width:min(88vw,340px);text-align:left}
+.panel h2{margin:0 0 24px;font-weight:200;font-size:28px;letter-spacing:.12em;text-align:center;color:var(--glow)}
+.row{margin-bottom:22px}
+.row .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:16px}
+.tg{width:46px;height:26px;border-radius:13px;border:1px solid #3a4676;background:none;position:relative;padding:0}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#6a78b3;transition:transform .2s,background .2s}
+.tg[aria-pressed="true"]{border-color:var(--glow)}
+.tg[aria-pressed="true"]::after{transform:translateX(20px);background:var(--glow)}
+input[type=range]{width:100%;accent-color:#7fe3d6;height:28px;margin:0}
+input[type=range]:disabled{opacity:.35}
+.btn,.seg button{background:none;border:1px solid #3a4676;color:var(--ink);border-radius:20px;padding:8px 18px;font-size:15px}
+.seg{display:flex;gap:8px;justify-content:center;margin-top:20px}
+.seg button[aria-pressed="true"]{border-color:var(--glow);color:var(--glow)}
+#resume{border-color:var(--glow);color:var(--glow);padding:10px 30px;font-size:16px;margin-top:4px}
+@media (prefers-reduced-motion:reduce){.ov{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud"><span id="lvl"></span><button id="pauseBtn"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/><rect x="8.5" y="1" width="3.5" height="12" rx="1.2" fill="currentColor"/></svg></button></div>
+  <div id="stage"><canvas id="c"></canvas></div>
+  <div id="banner"></div>
+</div>
+<div class="ov" id="start"><h1>CALMARA</h1><p data-i="intro"></p><div class="seg"></div></div>
+<div class="ov hide" id="win" data-i="win"></div>
+<div class="ov hide" id="pause"><div class="panel">
+  <h2 data-i="pause"></h2>
+  <div class="row"><div class="top"><span data-i="music"></span><button class="tg" id="tm" aria-pressed="true"></button></div><input type="range" id="mv" min="0" max="100"></div>
+  <div class="row"><div class="top"><span data-i="sfx"></span><button class="tg" id="ts" aria-pressed="true"></button></div><input type="range" id="sv" min="0" max="100"></div>
+  <div class="row"><div class="top"><span data-i="lang"></span></div><div class="seg" style="margin-top:0;justify-content:flex-start"></div></div>
+  <div style="text-align:center"><button class="btn" id="resume" data-i="resume"></button></div>
+</div></div>
+<div class="ov hide" id="ad"><p data-i="ad"></p><button id="adBtn" disabled>Continuar</button></div>
+
+<script>
+/* ============ CONFIGURAÇÃO ============ */
+const AD_EVERY_LEVELS = 5;   // mínimo de fases concluídas entre um anúncio e outro
+const AD_MIN_SECONDS  = 90;  // e mínimo de segundos entre anúncios (o que demorar mais)
+const SHOW_BANNER_SPACE = true;
+const ADS_ENABLED = false;   // versão web: sem anúncios (os espaços de teste só aparecem se for true)
+
+/* ============ UTIL ============ */
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){} }
+};
+const $ = id => document.getElementById(id);
+const N=1,E=2,S=4,W=8;
+const DX={1:0,2:1,4:0,8:-1}, DY={1:-1,2:0,4:1,8:0}, OPP={1:4,2:8,4:1,8:2};
+const rot = m => ((m<<1)|(m>>3)) & 15;   // 90° horário
+
+/* ============ CONFIGURAÇÕES E IDIOMAS ============ */
+const CFG={music:true,sfx:true,mv:.8,sv:.8,lang:(navigator.language||'pt').toLowerCase().startsWith('pt')?'pt':'en'};
+try{ Object.assign(CFG, JSON.parse(store.get('calmara_cfg')||'{}')); }catch(e){}
+const saveCfg=()=>store.set('calmara_cfg',JSON.stringify(CFG));
+const T={
+ pt:{level:'Fase',win:'Fase concluída',intro:'Gire as peças até que todas as linhas se conectem. Toque para começar.',pause:'Pausa',music:'Música',sfx:'Efeitos sonoros',lang:'Idioma',resume:'Continuar',ad:'Espaço para anúncio',cont:'Continuar',banner:'Espaço para banner',pauseL:'Pausar'},
+ en:{level:'Level',win:'Level complete',intro:'Rotate the pieces until every line connects. Tap to begin.',pause:'Paused',music:'Music',sfx:'Sound effects',lang:'Language',resume:'Resume',ad:'Ad space',cont:'Continue',banner:'Banner space',pauseL:'Pause'}
+};
+const t=k=>T[CFG.lang][k];
+function setLevelLabel(){ $('lvl').textContent=t('level')+' '+level; }
+function applyLang(){
+  document.documentElement.lang=CFG.lang==='pt'?'pt-BR':'en';
+  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+  $('pauseBtn').setAttribute('aria-label',t('pauseL'));
+  $('tm').setAttribute('aria-label',t('music')); $('ts').setAttribute('aria-label',t('sfx'));
+  document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.l===CFG.lang));
+  setLevelLabel();
+}
+
+/* ============ ESTADO ============ */
+const cv=$('c'), ctx=cv.getContext('2d');
+let W_=0,H_=0,dpr=1, level=parseInt(store.get('calmara_level'))||1;
+let lastAdLevel=level-1, lastAdTime=Date.now();  // ao abrir o app não aparece anúncio de cara
+let cols=3, rows=4, cs=60, ox=0, oy=0, cells=[], locked=true, solvedFlag=false;
+const bubbles = Array.from({length:16},()=>({x:Math.random(),y:Math.random(),r:4+Math.random()*14,v:.012+Math.random()*.03}));
+
+function maskOf(c){ let m=c.s; for(let k=0;k<(c.r%4);k++) m=rot(m); return m; }
+function at(x,y){ return (x<0||y<0||x>=cols||y>=rows)?null:cells[y*cols+x]; }
+function lit(x,y){
+  const m=maskOf(cells[y*cols+x]);
+  for(const d of [N,E,S,W]){
+    if(!(m&d)) continue;
+    const n=at(x+DX[d],y+DY[d]);
+    if(!n || !(maskOf(n)&OPP[d])) return false;
+  }
+  return true;
+}
+function solved(){
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) if(!lit(x,y)) return false;
+  return true;
+}
+
+/* ============ GERAÇÃO DE FASES ALEATÓRIAS ============ */
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  const r=$('stage').getBoundingClientRect();
+  W_=r.width; H_=r.height;
+  cv.width=W_*dpr; cv.height=H_*dpr;
+  layout();
+}
+function layout(){
+  cs=Math.min(W_/cols, H_/rows)*0.92;
+  ox=(W_-cs*cols)/2; oy=(H_-cs*rows)/2;
+}
+function newLevel(){
+  cols=Math.min(3+Math.floor((level-1)/2), 8);
+  const aspect=H_/W_;
+  rows=Math.max(3, Math.min(Math.round(cols*aspect*0.92), 14));
+  layout();
+  const n=cols*rows, m=new Array(n).fill(0), seen=new Uint8Array(n);
+  const st=[Math.floor(Math.random()*n)]; seen[st[0]]=1;
+  while(st.length){
+    const k = Math.random()<.5 ? st.length-1 : Math.floor(Math.random()*st.length);
+    const i=st[k], x=i%cols, y=(i/cols)|0;
+    const opts=[N,E,S,W].filter(d=>{
+      const nx=x+DX[d], ny=y+DY[d];
+      return nx>=0&&ny>=0&&nx<cols&&ny<rows&&!seen[ny*cols+nx];
+    });
+    if(!opts.length){ st.splice(k,1); continue; }
+    const d=opts[Math.floor(Math.random()*opts.length)];
+    const j=(y+DY[d])*cols+x+DX[d];
+    m[i]|=d; m[j]|=OPP[d]; seen[j]=1; st.push(j);
+  }
+  cells=m.map(s=>{ const r=Math.floor(Math.random()*4); return {s, r, a:r*Math.PI/2}; });
+  for(let g=0; g<60 && solved(); g++) cells[Math.floor(Math.random()*n)].r++;
+  solvedFlag=false; locked=false;
+  setLevelLabel();
+}
+
+/* ============ DESENHO ============ */
+let last=performance.now(), pulse=0;
+function frame(now){
+  const dt=Math.min(now-last,50); last=now;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W_,H_);
+  // bolhas de fundo
+  ctx.lineWidth=1; ctx.strokeStyle='rgba(127,227,214,.10)';
+  for(const b of bubbles){
+    b.y-=b.v*dt/1000; if(b.y<-.05){ b.y=1.05; b.x=Math.random(); }
+    ctx.beginPath(); ctx.arc(b.x*W_, b.y*H_, b.r, 0, 6.283); ctx.stroke();
+  }
+  if(solvedFlag) pulse+=dt/600;
+  const lw=cs*0.12, h=cs/2;
+  ctx.lineCap='round';
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++){
+    const c=cells[y*cols+x];
+    c.a += (c.r*Math.PI/2 - c.a)*Math.min(1,dt/70);
+    const on = lit(x,y);
+    ctx.save();
+    ctx.translate(ox+x*cs+h, oy+y*cs+h);
+    ctx.rotate(c.a);
+    ctx.lineWidth=lw;
+    ctx.strokeStyle = on ? '#7fe3d6' : '#6a78b3';
+    ctx.shadowColor = on ? 'rgba(127,227,214,.9)' : 'transparent';
+    ctx.shadowBlur = on ? cs*(solvedFlag? .35+.15*Math.sin(pulse+x+y) : .22) : 0;
+    ctx.beginPath();
+    for(const d of [N,E,S,W]) if(c.s&d){ ctx.moveTo(0,0); ctx.lineTo(DX[d]*h, DY[d]*h); }
+    ctx.stroke();
+    ctx.restore();
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ============ ÁUDIO (bolhas + pad relaxante) ============ */
+const MASTER=.9, CH_LEN=12, CH_STEP=8;   // acorde dura 12 s; o próximo entra aos 8 s (cross-fade de 4 s, nunca 3 acordes juntos)
+let ac=null, master=null, IR=null, MB=null, SB=null;   // MB = canal da música, SB = canal dos efeitos
+let chordI=0, chordT=0, bubbleEnds=[];
+const midi=n=>440*Math.pow(2,(n-69)/12);
+// 4 notas por acorde, registro médio (53-71): sem graves que embolam e com notas em comum entre acordes
+const CHORDS=[[57,64,67,71],[53,60,64,69],[55,60,64,71],[55,62,67,71]];
+const vol=(on,v)=>on?v*v:0;               // curva quadrática: o slider soa mais natural
+
+function makeBus(gain){                   // canal com volume próprio e reverb próprio
+  const bus=ac.createGain(); bus.gain.value=gain; bus.connect(master);
+  const rv=ac.createConvolver(); rv.buffer=IR;
+  const rf=ac.createBiquadFilter(); rf.type='lowpass'; rf.frequency.value=3000;
+  const rg=ac.createGain(); rg.gain.value=.5; rv.connect(rf); rf.connect(rg); rg.connect(bus);
+  return {bus, rv};
+}
+function route(node, wet, B){             // saída seca + envio para o reverb do canal
+  node.connect(B.bus);
+  const s=ac.createGain(); s.gain.value=wet; node.connect(s); s.connect(B.rv);
+}
+function applyVolumes(){
+  if(!ac) return;
+  const t0=ac.currentTime;
+  MB.bus.gain.setTargetAtTime(vol(CFG.music,CFG.mv),t0,.05);
+  SB.bus.gain.setTargetAtTime(vol(CFG.sfx,CFG.sv),t0,.05);
+}
+function initAudio(){
+  if(ac){ if(ac.state==='suspended') ac.resume(); return; }
+  ac=new (window.AudioContext||window.webkitAudioContext)();
+  // master -> limitador -> saída (evita clipping mesmo com várias camadas somadas)
+  const lim=ac.createDynamicsCompressor();
+  lim.threshold.value=-14; lim.knee.value=10; lim.ratio.value=12; lim.attack.value=.003; lim.release.value=.3;
+  master=ac.createGain(); master.gain.value=MASTER; master.connect(lim); lim.connect(ac.destination);
+  const len=ac.sampleRate*3.5; IR=ac.createBuffer(2,len,ac.sampleRate);
+  for(let c=0;c<2;c++){ const d=IR.getChannelData(c); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3); }
+  MB=makeBus(vol(CFG.music,CFG.mv)); SB=makeBus(vol(CFG.sfx,CFG.sv));
+  // drone grave, bem baixo, com entrada lenta
+  const dr=ac.createOscillator(), dg=ac.createGain(); dr.frequency.value=midi(33);
+  dg.gain.setValueAtTime(0,ac.currentTime); dg.gain.linearRampToValueAtTime(.025,ac.currentTime+6);
+  dr.connect(dg); dg.connect(MB.bus); dr.start();
+  chordT=ac.currentTime+.1; nextChord(); scheduleBowl();
+}
+function playChord(t){
+  const notes=CHORDS[chordI++%CHORDS.length], L=.3/(notes.length*2);  // soma de todas as vozes ≈ .3
+  const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=650; f.Q.value=.3;
+  const lfo=ac.createOscillator(), lg=ac.createGain(); lfo.frequency.value=.06; lg.gain.value=150;
+  lfo.connect(lg); lg.connect(f.frequency); lfo.start(t); lfo.stop(t+CH_LEN+.5);
+  const pg=ac.createGain();
+  pg.gain.setValueAtTime(0,t); pg.gain.linearRampToValueAtTime(L,t+4);
+  pg.gain.setValueAtTime(L,t+CH_STEP); pg.gain.linearRampToValueAtTime(0,t+CH_LEN);
+  f.connect(pg); route(pg,.5,MB);
+  let last;
+  for(const n of notes) for(const dt of [-7,7]){
+    const o=ac.createOscillator(); o.type=dt<0?'triangle':'sine';
+    o.frequency.value=midi(n); o.detune.value=dt; o.connect(f); o.start(t); o.stop(t+CH_LEN+.5); last=o;
+  }
+  last.onended=()=>{ try{ pg.disconnect(); f.disconnect(); }catch(e){} };
+}
+function nextChord(){
+  if(!ac) return;
+  if(ac.state==='running' && CFG.music){            // com a música desligada não gasta processamento
+    const t=Math.max(chordT, ac.currentTime+.05);
+    playChord(t); chordT=t+CH_STEP;
+  }
+  setTimeout(nextChord, CH_STEP*1000);
+}
+function kickMusic(){                             // ao religar a música, entra um acorde na hora
+  if(ac && ac.state==='running'){ const t=ac.currentTime+.05; playChord(t); chordT=t+CH_STEP; }
+}
+function scheduleBowl(){
+  if(!ac) return;
+  setTimeout(()=>{
+    if(ac.state==='running' && CFG.music){
+      const scale=[69,72,74,76,79,81], n=scale[Math.floor(Math.random()*scale.length)], t=ac.currentTime;
+      for(const [mul,v] of [[1,.05],[2.76,.012]]){
+        const o=ac.createOscillator(), g=ac.createGain(); o.frequency.value=midi(n)*mul;
+        g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.03); g.gain.exponentialRampToValueAtTime(.0001,t+7);
+        o.connect(g); route(g,.6,MB); o.start(t); o.stop(t+7.2);
+        o.onended=()=>{ try{ g.disconnect(); }catch(e){} };
+      }
+    }
+    scheduleBowl();
+  }, 10000+Math.random()*10000);
+}
+function bubble(f0, v0=.12, delay=0){
+  if(!ac || !CFG.sfx) return;
+  const now=ac.currentTime, t=now+delay;
+  bubbleEnds=bubbleEnds.filter(e=>e>now);
+  if(!delay && bubbleEnds.length>=5) return;      // limite de vozes: toques muito rápidos não somam
+  bubbleEnds.push(t+.2);
+  const o=ac.createOscillator(), g=ac.createGain(), f=f0||300+Math.random()*350;
+  o.type='sine';
+  o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*2.2,t+.09);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v0,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.17);
+  o.connect(g); route(g,.3,SB); o.start(t); o.stop(t+.2);
+  o.onended=()=>{ try{ g.disconnect(); }catch(e){} };
+}
+document.addEventListener('visibilitychange',()=>{ if(!ac) return; document.hidden?ac.suspend():ac.resume(); });
+
+/* ============ ANÚNCIOS ============ */
+// Android: exponha um @JavascriptInterface chamado "Android" com showInterstitial().
+// Ao fechar o anúncio, o Android deve chamar: webView.evaluateJavascript("onAdClosed()", null)
+function showInterstitial(done){
+  window.__adDone=done;
+  if(window.Android && window.Android.showInterstitial){
+    window.Android.showInterstitial();
+    clearTimeout(window.__adT); window.__adT=setTimeout(()=>window.onAdClosed(),60000); // segurança
+  } else {
+    const ad=$('ad'), b=$('adBtn'); b.disabled=true; ad.classList.remove('hide');
+    let s=3; b.textContent=t('cont')+' ('+s+')';
+    const iv=setInterval(()=>{ s--; b.textContent=s>0?t('cont')+' ('+s+')':t('cont'); if(s<=0){ clearInterval(iv); b.disabled=false; } },1000);
+    b.onclick=()=>window.onAdClosed();
+  }
+}
+window.onAdClosed=()=>{
+  clearTimeout(window.__adT);
+  $('ad').classList.add('hide');
+  const f=window.__adDone; window.__adDone=null; if(f) f();
+};
+
+/* ============ FLUXO DO JOGO ============ */
+function onWin(){
+  locked=true; solvedFlag=true;
+  [392,440,523,587,659,784].forEach((f,i)=>bubble(f,.1,i*.13));
+  $('win').classList.remove('hide');
+  setTimeout(()=>{
+    $('win').classList.add('hide');
+    const done=level;
+    level++; store.set('calmara_level',level);
+    const go=()=>newLevel();
+    const due=ADS_ENABLED&&(done-lastAdLevel>=AD_EVERY_LEVELS)&&(Date.now()-lastAdTime>=AD_MIN_SECONDS*1000);
+    if(due){ lastAdLevel=done; showInterstitial(()=>{ lastAdTime=Date.now(); go(); }); } else go();
+  },1800);
+}
+cv.addEventListener('pointerdown',e=>{
+  if(locked) return;
+  const r=cv.getBoundingClientRect(), x=Math.floor((e.clientX-r.left-ox)/cs), y=Math.floor((e.clientY-r.top-oy)/cs);
+  const c=at(x,y); if(!c) return;
+  c.r++; bubble();
+  if(solved()) onWin();
+});
+$('start').addEventListener('pointerdown',()=>{ initAudio(); $('start').classList.add('hide'); });
+window.addEventListener('resize',resize);
+
+if(window.Android || !SHOW_BANNER_SPACE || !ADS_ENABLED) $('banner').style.display='none';  // no Android o banner é nativo
+else $('banner').dataset.i='banner';
+/* ---- menu de pausa ---- */
+let paused=false;
+function openPause(){
+  if(locked || paused || !$('start').classList.contains('hide')) return;  // não pausa durante vitória/anúncio/tela inicial
+  paused=true; $('pause').classList.remove('hide');
+}
+function closePause(){ paused=false; $('pause').classList.add('hide'); }
+window.onBack=()=>{ paused?closePause():openPause(); };   // botão voltar do Android
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'||e.key==='p'||e.key==='P') window.onBack(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) openPause(); });
+function buildUI(){
+  const mv=$('mv'), sv=$('sv'), tm=$('tm'), ts=$('ts');
+  mv.value=Math.round(CFG.mv*100); sv.value=Math.round(CFG.sv*100);
+  const sync=()=>{
+    tm.setAttribute('aria-pressed',CFG.music); ts.setAttribute('aria-pressed',CFG.sfx);
+    mv.disabled=!CFG.music; sv.disabled=!CFG.sfx;
+  };
+  sync();
+  tm.onclick=()=>{ CFG.music=!CFG.music; sync(); saveCfg(); applyVolumes(); if(CFG.music) kickMusic(); };
+  ts.onclick=()=>{ CFG.sfx=!CFG.sfx; sync(); saveCfg(); applyVolumes(); if(CFG.sfx) setTimeout(()=>bubble(),80); };
+  mv.oninput=()=>{ CFG.mv=mv.value/100; applyVolumes(); };  mv.onchange=saveCfg;
+  sv.oninput=()=>{ CFG.sv=sv.value/100; applyVolumes(); };  sv.onchange=()=>{ saveCfg(); bubble(); };
+  document.querySelectorAll('.seg').forEach(seg=>{
+    seg.innerHTML='<button data-l="pt">Português</button><button data-l="en">English</button>';
+    seg.addEventListener('pointerdown',e=>e.stopPropagation());   // na tela inicial, não inicia o jogo
+    seg.onclick=e=>{ const l=e.target.dataset.l; if(l){ CFG.lang=l; saveCfg(); applyLang(); } };
+  });
+  $('pauseBtn').onclick=openPause; $('resume').onclick=closePause;
+}
+buildUI(); applyLang();
+resize(); newLevel();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
